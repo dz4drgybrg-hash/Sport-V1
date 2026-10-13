@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mes séances</title>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--tx:#14171c;--mu:#6b7280;--ac:#3b6fd4;--ok:#1f9d55;--bd:#d9dde3;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0f13;--card:#171a21;--tx:#eef0f4;--mu:#9099a8;--ac:#6e9cff;--ok:#41c27a;--bd:#2a2f3a}}
+:root[data-theme="dark"]{--bg:#0d0f13;--card:#171a21;--tx:#eef0f4;--mu:#9099a8;--ac:#6e9cff;--ok:#41c27a;--bd:#2a2f3a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,sans-serif;padding:12px 12px 130px}
+.tabs{display:flex;gap:8px;margin-bottom:10px}
+.tabs button{flex:1;padding:11px;border:1px solid var(--bd);background:var(--card);color:var(--tx);border-radius:12px;font-size:16px;font-weight:600}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.when{margin:4px 2px 10px;color:var(--mu);font-size:15px}
+.ex{background:var(--card);border:2px solid var(--bd);border-radius:14px;padding:10px 12px;margin-bottom:10px}
+.ex.act{border-color:var(--ac)}.ex.done{border-color:var(--ok)}
+.h{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.h b{font-size:17px}.h span{color:var(--mu);font-size:14px}
+.s{display:flex;align-items:center;gap:8px;margin-top:8px}
+.s i{font-style:normal;color:var(--mu);width:18px}
+.s input{width:100%;min-width:0;padding:9px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--tx);font-size:17px;text-align:center}
+.s small{color:var(--mu)}
+.bar{flex-wrap:wrap;position:fixed;left:0;right:0;bottom:0;padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--bd);display:flex;gap:10px;align-items:center}
+#mic{flex:0 0 auto;padding:14px 22px;border:0;border-radius:30px;background:var(--ac);color:#fff;font-size:17px;font-weight:700}
+#mic.rec{background:#d83b3b}
+.row2{flex:1 0 100%;display:flex;gap:8px}.row2 input{flex:1;min-width:0;padding:11px;border:1px solid var(--bd);border-radius:12px;background:var(--bg);color:var(--tx);font-size:17px}.row2 button{padding:11px 18px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-size:17px;font-weight:700}
+#tr{flex:1;min-width:0;font-size:14px;color:var(--mu);min-height:20px}
+.fin{width:100%;padding:14px;border:0;border-radius:12px;background:var(--ok);color:#fff;font-size:17px;font-weight:700;margin-top:4px}
+.hx{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--bd);font-size:15px}
+.hx span{color:var(--mu);text-align:right}
+.del{margin-top:10px;background:none;border:0;color:#d83b3b;text-decoration:underline;font-size:14px}
+.empty{text-align:center;color:var(--mu);margin-top:40px}
+</style></head><body>
+<div class="tabs" id="vt"></div>
+<div id="sub"></div>
+<div id="list"></div>
+<div class="bar" id="bar"><button id="mic">🎤 Parler</button><div id="tr">Dis « 80 kilos 8 reps »</div></div>
+<script>
+const LG=[];let MODE="simple",lgOpen=false;const T0=Date.now();
+function lg(m){LG.push(((Date.now()-T0)/1000).toFixed(1)+"s "+m);if(LG.length>90)LG.shift();const b=document.getElementById("lgbox");if(b)b.textContent=LG.join("\n")}
+function toggleLg(){lgOpen=!lgOpen;render()}
+function toggleMode(){MODE=MODE==="simple"?"continu":"simple";lg("mode -> "+MODE);render()}
+function copyLg(){const t=LG.join("\n");try{navigator.clipboard.writeText(t).then(()=>{tr.textContent="Journal copié."},()=>{tr.textContent="Copie impossible : sélectionne le texte à la main."})}catch(e){tr.textContent="Copie impossible : sélectionne le texte à la main."}}
+const P={
+A:[["Squat (Smith)","4-8"],["Preacher Curls","6-10"],["Dips (Machine)","6-8"],["Chest supported Row","8-12"],["Tricep Extension (Cable)","10-15"],["Lateral Raises (Machine)","10-15"],["Abs","15-20"]],
+B:[["Overhead Press (Smith)","6-10"],["Hammer Curl","6-10"],["Pulldown","6-10"],["Leg Curl","12-15"],["Split Squat","8-12"],["Pec Dec","10-12"],["Neck Curl","15-20"]],
+C:[["RDL (Dumbbell)","6-12",8],["Calf Raises","15-20",8],["Incline Bench (Smith)","6-10",25],["Preacher Curls","6-10",20],["Leg Press","8-12",100],["Overhead Extension (Cable)","8-12",7.5],["Abs","15-20",50]]};
+const K="seances_v2";
+let S={view:"seance",day:"A",act:{A:0,B:0,C:0},cur:{},hist:[],open:null};
+try{const r=localStorage.getItem(K);if(r)S=Object.assign(S,JSON.parse(r))}catch(e){}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){}}
+const fmt=t=>new Date(t).toLocaleString("fr-FR",{weekday:"short",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const draft=d=>S.cur[d]||(S.cur[d]={start:null,d:{}});
+function lastKg(day,i,j){const h=S.hist.find(x=>x.day===day);const s=h&&h.ex[i]&&h.ex[i].sets[j];return s&&s.kg!==""?s.kg:null}
+function get(day,i,j){const D=draft(day);if(!D.d[i])D.d[i]=[0,1,2].map(j=>({kg:lastKg(day,i,j)??P[day][i][2]??"",r:""}));return D.d[i][j]}
+const doneEx=(day,i)=>[0,1,2].every(j=>get(day,i,j).r!=="");
+function start(){const D=draft(S.day);if(!D.start){D.start=Date.now();const w=document.getElementById("when");if(w)w.textContent="Jour "+S.day+" · "+fmt(D.start)}}
+function render(){
+ document.getElementById("vt").innerHTML=[["seance","Séance"],["hist","Historique ("+S.hist.length+")"]].map(v=>`<button class="${S.view==v[0]?"on":""}" onclick="S.view='${v[0]}';save();render()">${v[1]}</button>`).join("");
+ document.getElementById("bar").style.display=S.view=="seance"?"flex":"none";
+ S.view=="seance"?renderSeance():renderHist()}
+function renderSeance(){
+ const D=draft(S.day);
+ document.getElementById("sub").innerHTML=`<div class="tabs">${["A","B","C"].map(d=>`<button class="${d==S.day?"on":""}" onclick="S.day='${d}';save();render()">Jour ${d}</button>`).join("")}</div><div class="when" id="when">${D.start?"Jour "+S.day+" · "+fmt(D.start):"Séance pas encore commencée (la date se note toute seule)"}</div>`;
+ document.getElementById("list").innerHTML=P[S.day].map((e,i)=>`<div class="ex ${i==S.act[S.day]?"act":""} ${doneEx(S.day,i)?"done":""}" id="e${i}" onclick="sel(${i})">
+ <div class="h"><b>${e[0]}</b><span>3 × ${e[1]}</span></div>
+ ${[0,1,2].map(j=>{const s=get(S.day,i,j);return `<div class="s"><i>${j+1}</i><input inputmode="decimal" placeholder="kg" value="${s.kg}" onfocus="sel(${i},1)" oninput="upd(${i},${j},'kg',this.value)"><small>kg</small><input inputmode="numeric" placeholder="reps" value="${s.r}" onfocus="sel(${i},1)" oninput="upd(${i},${j},'r',this.value)"><small>reps</small></div>`}).join("")}</div>`).join("")+`<button class="fin" onclick="fin()">✅ Fin de séance</button><button class="del" onclick="toggleLg()">🔧 Journal du micro</button><div style="display:${lgOpen?"block":"none"}"><button class="del" onclick="toggleMode()">Mode micro : ${MODE} (toucher pour changer)</button><pre id="lgbox" style="white-space:pre-wrap;font-size:12px;color:var(--mu)">${LG.join("\n")}</pre><button class="del" onclick="copyLg()">Copier le journal</button></div>`}
+function sel(i,q){if(S.act[S.day]!==i){S.act[S.day]=i;save();if(!q)render()}}
+function upd(i,j,f,v){start();get(S.day,i,j)[f]=v;save()}
+function fin(){
+ const D=draft(S.day);
+ if(!D.start){alert("Rien n'est enregistré pour cette séance.");return}
+ if(!confirm("Terminer la séance Jour "+S.day+" et l'ajouter à l'historique ?"))return;
+ const ex=P[S.day].map((e,i)=>({n:e[0],t:e[1],sets:[0,1,2].map(j=>({kg:get(S.day,i,j).kg,r:get(S.day,i,j).r}))}));
+ S.hist.unshift({id:Date.now(),day:S.day,start:D.start,end:Date.now(),ex});
+ S.cur[S.day]=null;S.act[S.day]=0;S.view="hist";S.open=S.hist[0].id;save();render()}
+function renderHist(){
+ document.getElementById("sub").innerHTML="";
+ const L=document.getElementById("list");
+ if(!S.hist.length){L.innerHTML='<div class="empty">Aucune séance terminée pour l\'instant.</div>';return}
+ L.innerHTML=S.hist.map(h=>{const o=S.open===h.id;return `<div class="ex" onclick="S.open=${o?"null":h.id};save();render()"><div class="h"><b>Jour ${h.day}</b><span>${fmt(h.start)} · ${Math.max(1,Math.round((h.end-h.start)/60000))} min</span></div>`+(o?h.ex.map(e=>`<div class="hx"><b>${e.n}</b><span>${e.sets.filter(s=>s.r!==""||s.kg!=="").map(s=>(s.kg||"?")+" × "+(s.r||"?")).join(" · ")||"—"}</span></div>`).join("")+`<button class="del" onclick="event.stopPropagation();delH(${h.id})">Supprimer cette séance</button>`:"")+`</div>`}).join("")}
+function delH(id){if(confirm("Supprimer cette séance de l'historique ?")){S.hist=S.hist.filter(h=>h.id!==id);save();render()}}
+function parse(t){
+ t=t.toLowerCase();
+ // Décimale acceptée seulement si 1 chiffre (7,5) ou 25/75 (82,25). Sinon "80,15" = 80 puis 15.
+ t=t.replace(/(\d+)\s*(?:virgule|,|\.)\s*(\d+)(\s*(?:kilos?|kg)\b)?/g,(m,a,b,u)=>(b.length==1||b==="25"||b==="75")?a+"@"+b+(u||""):a+(u?" kg ":" ")+b);
+ t=t.replace(/,/g," ").replace(/@/g,".");
+ let kg=null,r=null,m=t.match(/(\d+(?:\.\d+)?)\s*(kilos?|kg)\b/);if(m)kg=m[1];
+ m=t.match(/(\d+)\s*(rép\w*|rep\w*|fois)/);if(m)r=m[1];
+ const n=(t.match(/\d+(?:\.\d+)?/g)||[]).filter(x=>x!==kg&&x!==r);
+ if(kg==null&&r==null){if(n.length>=2){kg=n[0];r=n[1]}else if(n.length==1)r=n[0]}
+ else if(kg==null&&n.length)kg=n[0];
+ else if(r==null&&n.length)r=n[0];
+ return{kg,r}}
+function apply(t){
+ const p=parse(t),i=S.act[S.day];
+ if(p.kg==null&&p.r==null){tr.textContent="Pas compris : « "+t+" »";return}
+ start();
+ let j=[0,1,2].find(j=>get(S.day,i,j).r==="");if(j==null)j=2;
+ const s=get(S.day,i,j);if(p.kg!=null)s.kg=p.kg;if(p.r!=null)s.r=p.r;
+ tr.textContent=`Série ${j+1} : ${s.kg||"?"} kg × ${s.r||"?"} reps · entendu : « ${t} » (v7)`;
+ if(doneEx(S.day,i)&&i<P[S.day].length-1)S.act[S.day]=i+1;
+ save();render();
+ const el=document.getElementById("e"+S.act[S.day]);if(el)el.scrollIntoView({block:"center",behavior:"smooth"})}
+const tr=document.getElementById("tr"),mic=document.getElementById("mic");
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!SR){mic.disabled=true;tr.textContent="Micro non supporté ici, saisie manuelle uniquement."}
+else{
+ let rec=null,want=false,idleT=null,fails=0,tap=0;
+ const ui=on=>{mic.classList.toggle("rec",on);mic.textContent=on?"⏹ Stop":"🎤 Parler"};
+ const off=msg=>{want=false;clearTimeout(idleT);ui(false);if(msg)tr.textContent=msg};
+ const arm=()=>{clearTimeout(idleT);idleT=setTimeout(()=>{if(want){const r=rec;lg("#"+tap+" minuterie -> abort");off("Micro coupé (trop long sans rien).");try{r&&r.abort()}catch(e){}}},MODE==="continu"?120000:15000)};
+ function go(){
+  const r=new SR();r.lang="fr-FR";r.continuous=MODE==="continu";r.interimResults=false;r.maxAlternatives=1;
+  const t0=Date.now();
+  ["audiostart","soundstart","speechstart","speechend","soundend","audioend","nomatch"].forEach(n=>r.addEventListener(n,()=>lg("#"+tap+" "+n)));
+  r.onstart=()=>{lg("#"+tap+" start");if(rec===r)tr.textContent="J'écoute… dis ta série"};
+  r.onresult=e=>{fails=0;for(let k=e.resultIndex;k<e.results.length;k++){if(e.results[k].isFinal){const t=(e.results[k][0].transcript||"").trim();lg("#"+tap+" result: "+t);if(t)apply(t)}}if(MODE==="continu")arm();else want=false};
+  r.onerror=e=>{lg("#"+tap+" error "+e.error);if(e.error==="aborted"||e.error==="no-speech")return;if(rec===r){rec=null}off("Erreur micro : "+e.error)};
+  r.onend=()=>{lg("#"+tap+" end ("+((Date.now()-t0)/1000).toFixed(1)+"s)");if(rec!==r)return;rec=null;
+   if(!want||MODE==="simple"){const w=want;want=false;clearTimeout(idleT);ui(false);if(w&&tr.textContent.indexOf("J'écoute")===0)tr.textContent="Rien entendu, réessaie.";return}
+   if(Date.now()-t0<1500)fails++;
+   if(fails>=3){off("Le micro s'arrête tout seul. Appuie pour relancer.");return}
+   setTimeout(()=>{if(want&&!rec)go()},400)};
+  rec=r;
+  try{r.start()}catch(err){lg("#"+tap+" start() a échoué: "+err.message);rec=null;off("Erreur : "+err.message)}
+ }
+ mic.onclick=()=>{
+  tap++;
+  if(want){lg("#"+tap+" appui = stop");const r=rec;off("Micro coupé.");rec=null;try{r&&r.abort()}catch(e){}return}
+  lg("--- appui #"+tap+" mode "+MODE+(tap===1?" | "+navigator.userAgent.slice(0,80):""));
+  want=true;fails=0;ui(true);tr.textContent="Je lance le micro…";arm();go()
+ }}
+render();
+</script></body></html>
